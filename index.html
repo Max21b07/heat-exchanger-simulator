@@ -57,6 +57,8 @@
   .bar-fill { border-radius: 4px; height: 100%; }
   .bar-fill.hot { background: linear-gradient(90deg, var(--hot), #f87171); }
   .bar-fill.cold { background: linear-gradient(90deg, var(--cold), #60a5fa); }
+  .chart-wrap { background: var(--bg); border-radius: 8px; padding: 12px; margin-top: 12px; }
+  canvas { width: 100%; height: 220px; display: block; }
 </style>
 </head>
 <body>
@@ -276,6 +278,10 @@
   </div>
 
   <div class="result-box" id="water_balance" style="margin-top:8px;"></div>
+  <div class="chart-wrap">
+    <div class="card-title">📈 Courbes temporelles</div>
+    <canvas id="trendChart" width="800" height="220"></canvas>
+  </div>
   <div id="warnings" style="margin-top:12px;"></div>
 </div>
 
@@ -332,6 +338,53 @@ function effectivenessCalc(Tin_h, Tin_c, m_c, cp_c, m_h, cp_h, U, A) {
   };
 }
 
+function drawTrendChart(points) {
+  const canvas = document.getElementById('trendChart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0f1117';
+  ctx.fillRect(0, 0, w, h);
+  if (!points || points.length < 2) return;
+
+  const pad = 40;
+  const times = points.map(p => p.t);
+  const duties = points.map(p => p.Q);
+  const waters = points.map(p => p.mw);
+  const tMin = Math.min(...times), tMax = Math.max(...times);
+  const qMin = 0, qMax = Math.max(...duties, 1);
+  const wMin = 0, wMax = Math.max(...waters, 1);
+
+  const xOf = t => pad + (t - tMin) / Math.max(tMax - tMin, 1e-9) * (w - 2 * pad);
+  const yQ = q => h - pad - (q - qMin) / Math.max(qMax - qMin, 1e-9) * (h - 2 * pad);
+  const yW = mw => h - pad - (mw - wMin) / Math.max(wMax - wMin, 1e-9) * (h - 2 * pad);
+
+  ctx.strokeStyle = '#2a2d3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h - pad); ctx.lineTo(w - pad, h - pad); ctx.stroke();
+
+  ctx.fillStyle = '#8892a4';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('Temps (min)', w / 2 - 30, h - 8);
+  ctx.save(); ctx.translate(14, h / 2 + 30); ctx.rotate(-Math.PI / 2); ctx.fillText('Duty (kW)', 0, 0); ctx.restore();
+  ctx.save(); ctx.translate(w - 8, h / 2 + 40); ctx.rotate(-Math.PI / 2); ctx.fillText('Débit eau (kg/h)', 0, 0); ctx.restore();
+
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p, i) => { const x = xOf(p.t), y = yQ(p.Q); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p, i) => { const x = xOf(p.t), y = yW(p.mw); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  ctx.stroke();
+
+  ctx.fillStyle = '#ef4444'; ctx.fillRect(pad + 10, 10, 12, 3); ctx.fillStyle = '#e0e3eb'; ctx.fillText('Duty', pad + 28, 15);
+  ctx.fillStyle = '#3b82f6'; ctx.fillRect(pad + 90, 10, 12, 3); ctx.fillStyle = '#e0e3eb'; ctx.fillText('Débit eau', pad + 108, 15);
+}
+
 function calculate() {
   let m_prod = parseFloat(document.getElementById('m_prod').value);
   const m_prod_total = parseFloat(document.getElementById('m_prod_total').value);
@@ -351,6 +404,7 @@ function calculate() {
 
   let Q, Tout_prod, Tout_water, epsilon, LMTD_val, regLabel = '';
   let batchMinutes = null;
+  let trendPoints = [];
 
   const CpP = cp_prod, CpW = cp_water;
   if (productMode === 'tank') m_prod = m_prod_recirc;
@@ -394,8 +448,26 @@ function calculate() {
     const coolingRateKperMin = (m_prod_recirc / Math.max(m_prod_total, 1)) * dT_per_pass / 60;
     batchMinutes = coolingRateKperMin > 0 ? Math.max(0, (Tin_prod - tout_target) / coolingRateKperMin) : null;
     document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
+
+    const steps = Math.max(6, Math.min(60, Math.round(sim_minutes)));
+    for (let i = 0; i <= steps; i++) {
+      const t = (sim_minutes / steps) * i;
+      const frac = batchMinutes ? Math.min(t / batchMinutes, 1) : 0;
+      const tankTemp = Tin_prod - (Tin_prod - tout_target) * frac;
+      let mwNow = m_water;
+      if (mode === 'product_setpoint') {
+        mwNow = m_water * (1 - 0.25 * frac);
+      }
+      const rNow = effectivenessCalc(tankTemp, Tin_water, mwNow, CpW, m_prod_recirc, CpP, U, A);
+      trendPoints.push({ t, Q: rNow.Q, mw: mwNow });
+    }
   } else {
     document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
+    const steps = 20;
+    for (let i = 0; i <= steps; i++) {
+      const t = (sim_minutes / steps) * i;
+      trendPoints.push({ t, Q, mw: m_water });
+    }
   }
 
   document.getElementById('r_Q').textContent = Q.toFixed(1);
@@ -431,6 +503,8 @@ function calculate() {
   if (LMTD_val && LMTD_val < 2) warnings += '⚠️ LMTD < 2°C, approche thermique serrée.\n';
   if (productMode === 'tank' && m_prod_recirc > m_prod_total * 10) warnings += '⚠️ Recirculation produit très élevée vs masse totale.\n';
   document.getElementById('warnings').innerHTML = warnings ? `<div class="warning">${warnings.replace(/\n/g,'<br>')}</div>` : '';
+
+  drawTrendChart(trendPoints);
 
   document.getElementById('regulation_result').innerHTML = `
     <div class="result-box">
