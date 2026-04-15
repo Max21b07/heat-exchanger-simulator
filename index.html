@@ -315,14 +315,19 @@ function effectivenessCalc(Tin_h, Tin_c, m_c, cp_c, m_h, cp_h, U, A) {
   const C_min = Math.min(C_h, C_c);
   const C_max = Math.max(C_h, C_c);
   const C_ratio = C_max > 0 ? C_min / C_max : 1;
-  const NTU = U * A / C_min;
-  const eps_max = (1 - Math.exp(-NTU * (1 - C_ratio))) / (1 - C_ratio * Math.exp(-NTU * (1 - C_ratio)));
+  const NTU = U * A / Math.max(C_min, 1e-9);
+  let eps_max;
+  if (Math.abs(1 - C_ratio) < 1e-6) {
+    eps_max = NTU / (1 + NTU);
+  } else {
+    eps_max = (1 - Math.exp(-NTU * (1 - C_ratio))) / (1 - C_ratio * Math.exp(-NTU * (1 - C_ratio)));
+  }
   const eff_user = parseFloat(document.getElementById('effectiveness').value) / 100;
   const epsilon = Math.min(eps_max, eff_user);
   const Q_max = C_min * (Tin_h - Tin_c);
   const Q = epsilon * Q_max;
   return {
-    Q, Tout_h: Tin_h - Q / C_h, Tout_c: Tin_c + Q / C_c,
+    Q, Tout_h: Tin_h - Q / Math.max(C_h, 1e-9), Tout_c: Tin_c + Q / Math.max(C_c, 1e-9),
     epsilon, NTU
   };
 }
@@ -393,7 +398,7 @@ function calculate() {
     document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
   }
 
-  document.getElementById('r_Q').textContent = (Q / 1000).toFixed(0);
+  document.getElementById('r_Q').textContent = Q.toFixed(1);
   document.getElementById('r_water_out').textContent = Tout_water.toFixed(1);
   document.getElementById('r_effectiveness').textContent = (epsilon * 100).toFixed(1);
   document.getElementById('r_lmtd').textContent = LMTD_val ? LMTD_val.toFixed(1) : 'N/A';
@@ -412,8 +417,8 @@ function calculate() {
   const Qc2 = m_water * cp_water * (Tout_water - Tin_water) / 3600;
   const imbalance = Math.abs(Qc1 - Qc2) / Math.max(Math.abs(Qc1), 1) * 100;
   document.getElementById('water_balance').innerHTML = `
-    <div class="result-row"><span class="result-label">Bilan thermique produit</span><span class="result-value">${(Qc1/1000).toFixed(1)} kW</span></div>
-    <div class="result-row"><span class="result-label">Bilan thermique eau</span><span class="result-value">${(Qc2/1000).toFixed(1)} kW</span></div>
+    <div class="result-row"><span class="result-label">Bilan thermique produit</span><span class="result-value">${Qc1.toFixed(1)} kW</span></div>
+    <div class="result-row"><span class="result-label">Bilan thermique eau</span><span class="result-value">${Qc2.toFixed(1)} kW</span></div>
     <div class="result-row"><span class="result-label">Écart</span><span class="result-value ${imbalance<2?'ok':'hot'}">${imbalance.toFixed(3)}%</span></div>
     ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Masse totale à refroidir</span><span class="result-value">${m_prod_total.toFixed(0)} kg</span></div>` : ''}
     ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Recirculation produit</span><span class="result-value">${m_prod_recirc.toFixed(0)} kg/h</span></div>` : ''}
