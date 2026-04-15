@@ -175,6 +175,27 @@
     box-shadow: 0 0 0 3px rgba(47, 143, 203, 0.16);
   }
   .unit { font-size: 0.73rem; color: var(--muted-2); }
+  .field-error {
+    display: none;
+    color: #ff9f8f;
+    font-size: 0.73rem;
+    line-height: 1.35;
+  }
+  .param.has-error input, .param.has-error select {
+    border-color: rgba(214, 90, 74, 0.92);
+    box-shadow: 0 0 0 3px rgba(214, 90, 74, 0.12);
+  }
+  .param.has-error .field-error { display: block; }
+  .context-note {
+    color: var(--muted);
+    font-size: 0.79rem;
+    line-height: 1.5;
+    margin: -2px 0 16px;
+    padding: 10px 12px;
+    background: rgba(13, 21, 28, 0.62);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
   .result-box {
     background: rgba(13, 21, 28, 0.72);
     border: 1px solid var(--border);
@@ -216,6 +237,58 @@
     border: 1px solid rgba(215, 154, 43, 0.32);
     border-radius: var(--radius);
     padding: 10px 12px;
+  }
+  .decision-banner {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: rgba(13, 21, 28, 0.78);
+  }
+  .decision-banner .decision-title {
+    font-size: 0.98rem;
+    font-weight: 850;
+  }
+  .decision-banner .decision-detail {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .decision-banner.reached {
+    border-color: rgba(53, 182, 123, 0.48);
+    background: linear-gradient(180deg, rgba(53, 182, 123, 0.14), rgba(13, 21, 28, 0.78));
+  }
+  .decision-banner.reached .decision-title { color: #9ee2c2; }
+  .decision-banner.not-reached {
+    border-color: rgba(215, 154, 43, 0.52);
+    background: linear-gradient(180deg, rgba(215, 154, 43, 0.15), rgba(13, 21, 28, 0.78));
+  }
+  .decision-banner.not-reached .decision-title { color: #f2bf63; }
+  .decision-banner.invalid {
+    border-color: rgba(214, 90, 74, 0.58);
+    background: linear-gradient(180deg, rgba(214, 90, 74, 0.16), rgba(13, 21, 28, 0.78));
+  }
+  .decision-banner.invalid .decision-title { color: #ffb0a3; }
+  .assumption-panel {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgba(13, 21, 28, 0.62);
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+  .assumption-panel ul {
+    margin: 8px 0 0 18px;
+  }
+  .assumption-panel strong {
+    color: var(--text);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .info { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
   .calc-btn {
@@ -349,49 +422,55 @@
 <div class="container">
 
 <div class="card">
-  <div class="card-title">Produit côté tubes</div>
+  <div class="card-title">Mode opératoire produit</div>
 
-  <div class="param-row">
+  <div class="param-row single">
     <div class="param">
-      <label>Mode produit</label>
+      <label for="product_mode">Mode produit</label>
       <select id="product_mode">
         <option value="inline">Produit en ligne</option>
         <option value="tank">Produit sur capacité / recirculation</option>
       </select>
     </div>
+  </div>
+  <p class="context-note" id="product_mode_note">Le produit traverse l'échangeur une fois. La cible sert de référence pour décider si le point atteint le refroidissement demandé.</p>
+
+  <div class="card-title">Produit côté tubes</div>
+
+  <div class="param-row single">
     <div class="param">
-      <label>Chaleur spécifique Cp</label>
+      <label for="cp_prod">Chaleur spécifique Cp</label>
       <input type="number" id="cp_prod" value="2.35" step="0.01" min="0">
       <span class="unit">kJ/(kg·K)</span>
     </div>
   </div>
   <div class="param-row single" id="inline_prod_row">
     <div class="param">
-      <label>Débit massique produit</label>
+      <label for="m_prod">Débit massique produit</label>
       <input type="number" id="m_prod" value="10000" step="100" min="0">
       <span class="unit">kg/h</span>
     </div>
   </div>
   <div class="param-row" id="tank_prod_row" style="display:none;">
     <div class="param">
-      <label>Masse totale produit à refroidir</label>
+      <label for="m_prod_total">Masse totale produit à refroidir</label>
       <input type="number" id="m_prod_total" value="15000" step="100" min="1">
       <span class="unit">kg</span>
     </div>
     <div class="param">
-      <label>Débit de recirculation produit</label>
+      <label for="m_prod_recirc">Débit de recirculation produit</label>
       <input type="number" id="m_prod_recirc" value="12000" step="100" min="1">
       <span class="unit">kg/h</span>
     </div>
   </div>
   <div class="param-row">
     <div class="param">
-      <label>Température entrée / initiale produit</label>
+      <label for="tin_prod">Température entrée / initiale produit</label>
       <input type="number" id="tin_prod" value="120" step="1">
       <span class="unit">°C</span>
     </div>
     <div class="param">
-      <label>Température cible produit</label>
+      <label for="tout_prod" id="target_temp_label">Température cible produit</label>
       <input type="number" id="tout_prod" value="55" step="1">
       <span class="unit">°C</span>
     </div>
@@ -401,44 +480,50 @@
 
   <div class="param-row">
     <div class="param">
-      <label>Débit massique eau</label>
+      <label for="m_water">Débit massique eau</label>
       <input type="number" id="m_water" value="20000" step="100" min="0">
       <span class="unit">kg/h</span>
     </div>
     <div class="param">
-      <label>Chaleur spécifique Cp eau</label>
+      <label for="cp_water">Chaleur spécifique Cp eau</label>
       <input type="number" id="cp_water" value="4.18" step="0.01" min="0">
       <span class="unit">kJ/(kg·K)</span>
     </div>
   </div>
   <div class="param-row">
     <div class="param">
-      <label>Température d'entrée eau</label>
+      <label for="tin_water">Température d'entrée eau</label>
       <input type="number" id="tin_water" value="30" step="1">
       <span class="unit">°C</span>
     </div>
-    <div class="param">
-      <label>Pas de simulation batch</label>
+    <div class="param" id="sim_minutes_row">
+      <label for="sim_minutes">Pas de simulation batch</label>
       <input type="number" id="sim_minutes" value="10" step="1" min="1">
       <span class="unit">minutes</span>
     </div>
   </div>
 
-  <div class="card-title">Mode de régulation</div>
+  <div class="card-title">Objectif de contrôle</div>
   <div class="regulation-mode">
     <select id="reg_mode">
       <option value="fixed">Pas de régulation</option>
       <option value="product_setpoint">Régulation T produit via débit eau</option>
       <option value="tower_deltaT">Régulation ΔT eau via débit produit</option>
-      <option value="one_through">Refroidissement produit en ligne</option>
     </select>
     <div class="mode-desc" id="mode_desc">Débits fixes. Le simulateur calcule les températures de sortie réelles et la puissance échangée.</div>
   </div>
 
   <div class="param-row" id="valve_row">
     <div class="param">
-      <label>Consigne T sortie produit</label>
+      <label for="t_setpoint">Consigne T sortie produit</label>
       <input type="number" id="t_setpoint" value="55" step="1">
+      <span class="unit">°C</span>
+    </div>
+  </div>
+  <div class="param-row" id="water_dt_row" style="display:none;">
+    <div class="param">
+      <label for="water_dt_setpoint">Consigne ΔT eau</label>
+      <input type="number" id="water_dt_setpoint" value="10" step="0.5" min="0.1">
       <span class="unit">°C</span>
     </div>
   </div>
@@ -446,17 +531,17 @@
   <div class="card-title">Caractéristiques de l'échangeur</div>
   <div class="param-row-3">
     <div class="param">
-      <label>Surface d'échange A</label>
+      <label for="A_exch">Surface d'échange A</label>
       <input type="number" id="A_exch" value="50" step="1" min="1">
       <span class="unit">m²</span>
     </div>
     <div class="param">
-      <label>Coef. global U</label>
+      <label for="U_val">Coef. global U</label>
       <input type="number" id="U_val" value="800" step="10" min="10">
       <span class="unit">W/(m²·K)</span>
     </div>
     <div class="param">
-      <label>Efficacité échangeur</label>
+      <label for="effectiveness">Efficacité échangeur</label>
       <input type="number" id="effectiveness" value="85" step="1" min="1" max="99">
       <span class="unit">%</span>
     </div>
@@ -468,6 +553,11 @@
 
 <div class="card">
   <div class="card-title">Synthèse des résultats</div>
+
+  <div class="decision-banner not-reached" id="decision_banner">
+    <div class="decision-title" id="decision_title">Calcul en attente</div>
+    <div class="decision-detail" id="decision_detail">Renseigner les données puis lancer le calcul.</div>
+  </div>
 
   <div class="summary-grid">
     <div class="summary-item">
@@ -551,6 +641,15 @@
   </div>
 
   <div class="result-box" id="water_balance" style="margin-top:8px;"></div>
+  <div class="assumption-panel">
+    <strong>Hypothèses et méthode</strong>
+    <ul>
+      <li>Modèle stationnaire par efficacité-NTU, plafonné par l'efficacité saisie.</li>
+      <li>Propriétés Cp constantes, sans pertes thermiques externes ni changement de phase.</li>
+      <li>Mode capacité: estimation batch par recirculation parfaitement mélangée.</li>
+      <li>Les régulations recherchent le débit requis dans une plage 100 à 200 000 kg/h.</li>
+    </ul>
+  </div>
   <div class="chart-wrap">
     <div class="chart-head">
       <div class="card-title">Courbes temporelles</div>
@@ -570,21 +669,152 @@
 const regModeDesc = {
   'fixed': 'Débits fixes. Le simulateur calcule les températures de sortie réelles et la puissance échangée.',
   'product_setpoint': 'Le débit d\'eau est ajusté pour tenir une température produit cible.',
-  'tower_deltaT': 'Le débit produit est ajusté pour tenir un ΔT eau donné.',
-  'one_through': 'Refroidissement en ligne du produit, sans capacité produit.'
+  'tower_deltaT': 'Le débit produit est ajusté pour tenir le ΔT eau demandé.'
+};
+
+const productModeDesc = {
+  inline: 'Le produit traverse l\'échangeur une fois. La cible sert de référence pour décider si le point atteint le refroidissement demandé.',
+  tank: 'Le produit est considéré parfaitement mélangé dans une capacité. La recirculation définit le refroidissement par passage et le temps estimé vers la cible.'
 };
 
 function refreshUiState() {
   const regMode = document.getElementById('reg_mode').value;
   const productMode = document.getElementById('product_mode').value;
   document.getElementById('mode_desc').textContent = regModeDesc[regMode];
+  document.getElementById('product_mode_note').textContent = productModeDesc[productMode];
+  document.getElementById('target_temp_label').textContent = productMode === 'tank' ? 'Température cible capacité' : 'Température cible sortie produit';
   document.getElementById('tank_group').style.display = (productMode === 'tank') ? 'block' : 'none';
   document.getElementById('tank_prod_row').style.display = (productMode === 'tank') ? 'grid' : 'none';
   document.getElementById('inline_prod_row').style.display = (productMode === 'tank') ? 'none' : 'grid';
+  document.getElementById('sim_minutes_row').style.display = (productMode === 'tank') ? 'flex' : 'none';
+  document.getElementById('valve_row').style.display = (regMode === 'product_setpoint') ? 'grid' : 'none';
+  document.getElementById('water_dt_row').style.display = (regMode === 'tower_deltaT') ? 'grid' : 'none';
 }
 
 document.getElementById('reg_mode').addEventListener('change', refreshUiState);
 document.getElementById('product_mode').addEventListener('change', refreshUiState);
+
+document.querySelectorAll('input, select').forEach(el => {
+  const param = el.closest('.param');
+  if (param && !param.querySelector('.field-error')) {
+    const error = document.createElement('span');
+    error.className = 'field-error';
+    param.appendChild(error);
+  }
+});
+
+function clearValidation() {
+  document.querySelectorAll('.param.has-error').forEach(el => el.classList.remove('has-error'));
+  document.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; });
+}
+
+function setFieldError(id, message) {
+  const field = document.getElementById(id);
+  if (!field) return;
+  const param = field.closest('.param');
+  if (!param) return;
+  param.classList.add('has-error');
+  const error = param.querySelector('.field-error');
+  if (error) error.textContent = message;
+}
+
+function isPositive(value) {
+  return Number.isFinite(value) && value > 0;
+}
+
+function validateInputs(values) {
+  const errors = [];
+  const requirePositive = (id, value, label) => {
+    if (!isPositive(value)) {
+      errors.push(label);
+      setFieldError(id, 'Valeur strictement positive requise.');
+    }
+  };
+
+  requirePositive('cp_prod', values.cp_prod, 'Cp produit');
+  requirePositive('cp_water', values.cp_water, 'Cp eau');
+  requirePositive('m_water', values.m_water, 'débit eau');
+  requirePositive('A_exch', values.A, 'surface échangeur');
+  requirePositive('U_val', values.U, 'coefficient U');
+  requirePositive('effectiveness', values.effectivenessPct, 'efficacité échangeur');
+
+  if (values.effectivenessPct > 99) {
+    errors.push('efficacité échangeur');
+    setFieldError('effectiveness', 'Rester entre 1 et 99 %.');
+  }
+
+  if (values.productMode === 'tank') {
+    requirePositive('m_prod_total', values.m_prod_total, 'masse capacité');
+    requirePositive('m_prod_recirc', values.m_prod_recirc, 'débit recirculation');
+    requirePositive('sim_minutes', values.sim_minutes, 'pas batch');
+  } else {
+    requirePositive('m_prod', values.m_prod, 'débit produit');
+  }
+
+  if (!Number.isFinite(values.Tin_prod)) {
+    errors.push('température produit');
+    setFieldError('tin_prod', 'Température requise.');
+  }
+  if (!Number.isFinite(values.Tin_water)) {
+    errors.push('température eau');
+    setFieldError('tin_water', 'Température requise.');
+  }
+  if (!Number.isFinite(values.tout_target)) {
+    errors.push('cible produit');
+    setFieldError('tout_prod', 'Température cible requise.');
+  }
+  if (Number.isFinite(values.Tin_prod) && Number.isFinite(values.Tin_water) && values.Tin_prod <= values.Tin_water) {
+    errors.push('approche thermique');
+    setFieldError('tin_prod', 'Pour un refroidissement, l\'entrée produit doit être au-dessus de l\'entrée eau.');
+    setFieldError('tin_water', 'L\'eau doit être plus froide que le produit entrant.');
+  }
+  if (Number.isFinite(values.tout_target) && Number.isFinite(values.Tin_prod) && values.tout_target >= values.Tin_prod) {
+    errors.push('cible produit');
+    setFieldError('tout_prod', 'La cible doit être inférieure à la température produit initiale.');
+  }
+  if (Number.isFinite(values.tout_target) && Number.isFinite(values.Tin_water) && values.tout_target <= values.Tin_water) {
+    errors.push('cible produit');
+    setFieldError('tout_prod', 'La cible ne peut pas être inférieure ou égale à l\'eau d\'entrée avec ce modèle.');
+  }
+
+  if (values.mode === 'product_setpoint') {
+    if (!Number.isFinite(values.t_setpoint)) {
+      errors.push('consigne produit');
+      setFieldError('t_setpoint', 'Consigne requise.');
+    } else if (values.t_setpoint >= values.Tin_prod || values.t_setpoint <= values.Tin_water) {
+      errors.push('consigne produit');
+      setFieldError('t_setpoint', 'Consigne comprise entre l\'entrée eau et l\'entrée produit requise.');
+    }
+  }
+
+  if (values.mode === 'tower_deltaT') {
+    requirePositive('water_dt_setpoint', values.water_dt_setpoint, 'consigne ΔT eau');
+    if (Number.isFinite(values.water_dt_setpoint) && Number.isFinite(values.Tin_prod) && Number.isFinite(values.Tin_water) && values.water_dt_setpoint >= values.Tin_prod - values.Tin_water) {
+      errors.push('consigne ΔT eau');
+      setFieldError('water_dt_setpoint', 'ΔT eau inférieur à l\'écart produit/eau requis.');
+    }
+  }
+
+  return errors;
+}
+
+function setDecisionBanner(status, title, detail) {
+  const banner = document.getElementById('decision_banner');
+  banner.className = `decision-banner ${status}`;
+  document.getElementById('decision_title').textContent = title;
+  document.getElementById('decision_detail').textContent = detail;
+}
+
+function resetResultsForInvalid(errors) {
+  ['r_Q', 'r_water_out', 'r_effectiveness', 'r_lmtd', 'r_batch_time'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('regulation_result').innerHTML = '';
+  document.getElementById('water_balance').innerHTML = '';
+  document.getElementById('warnings').innerHTML = `<div class="warning">Corriger les champs signalés avant calcul: ${errors.join(', ')}.</div>`;
+  drawTrendChart([]);
+  setDecisionBanner('invalid', 'Données à corriger', 'Le calcul est suspendu tant que les entrées impossibles ou manquantes ne sont pas corrigées.');
+}
 
 function LMTD(T1in, T1out, T2in, T2out) {
   const dT1 = T1in - T2out;
@@ -670,6 +900,7 @@ function drawTrendChart(points) {
 }
 
 function calculate() {
+  clearValidation();
   let m_prod = parseFloat(document.getElementById('m_prod').value);
   const m_prod_total = parseFloat(document.getElementById('m_prod_total').value);
   const m_prod_recirc = parseFloat(document.getElementById('m_prod_recirc').value);
@@ -685,6 +916,18 @@ function calculate() {
   const mode = document.getElementById('reg_mode').value;
   const productMode = document.getElementById('product_mode').value;
   const t_setpoint = parseFloat(document.getElementById('t_setpoint').value);
+  const water_dt_setpoint = parseFloat(document.getElementById('water_dt_setpoint').value);
+  const effectivenessPct = parseFloat(document.getElementById('effectiveness').value);
+
+  const validationErrors = validateInputs({
+    m_prod, m_prod_total, m_prod_recirc, cp_prod, Tin_prod, tout_target,
+    m_water, cp_water, Tin_water, sim_minutes, A, U, mode, productMode,
+    t_setpoint, water_dt_setpoint, effectivenessPct
+  });
+  if (validationErrors.length) {
+    resetResultsForInvalid(validationErrors);
+    return;
+  }
 
   let Q, Tout_prod, Tout_water, epsilon, LMTD_val, regLabel = '';
   let batchMinutes = null;
@@ -697,7 +940,7 @@ function calculate() {
     const r = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r.Q; Tout_prod = r.Tout_h; Tout_water = r.Tout_c; epsilon = r.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = (productMode === 'tank') ? 'Batch sur capacité produit' : (mode === 'one_through' ? 'Produit en ligne' : 'Débits fixes');
+    regLabel = (productMode === 'tank') ? 'Capacité produit, débits fixes' : 'Produit en ligne, débits fixes';
   } else if (mode === 'product_setpoint') {
     let lo = 100, hi = 200000;
     for (let i = 0; i < 50; i++) {
@@ -705,14 +948,14 @@ function calculate() {
       const r = effectivenessCalc(Tin_prod, Tin_water, mid, CpW, m_prod, CpP, U, A);
       if (Math.abs(r.Tout_h - t_setpoint) < 0.05) { m_water = mid; break; }
       r.Tout_h > t_setpoint ? lo = mid : hi = mid;
+      m_water = (lo + hi) / 2;
     }
     const r2 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r2.Q; Tout_prod = r2.Tout_h; Tout_water = r2.Tout_c; epsilon = r2.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
     regLabel = `Eau ajustée: ${m_water.toFixed(0)} kg/h`;
   } else if (mode === 'tower_deltaT') {
-    const r0 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
-    const targetDT = (r0.Tout_c - Tin_water);
+    const targetDT = water_dt_setpoint;
     let lo = 100, hi = 200000;
     for (let i = 0; i < 50; i++) {
       const mid = (lo + hi) / 2;
@@ -720,11 +963,12 @@ function calculate() {
       const dt = r.Tout_c - Tin_water;
       if (Math.abs(dt - targetDT) < 0.05) { m_prod = mid; break; }
       dt > targetDT ? lo = mid : hi = mid;
+      m_prod = (lo + hi) / 2;
     }
     const r2 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r2.Q; Tout_prod = r2.Tout_h; Tout_water = r2.Tout_c; epsilon = r2.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = `Produit ajusté: ${m_prod.toFixed(0)} kg/h`;
+    regLabel = `Produit ajusté: ${m_prod.toFixed(0)} kg/h pour ΔT eau ${targetDT.toFixed(1)} °C`;
   }
 
   if (productMode === 'tank') {
@@ -748,8 +992,9 @@ function calculate() {
   } else {
     document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
     const steps = 20;
+    const displayMinutes = isPositive(sim_minutes) ? sim_minutes : 10;
     for (let i = 0; i <= steps; i++) {
-      const t = (sim_minutes / steps) * i;
+      const t = (displayMinutes / steps) * i;
       trendPoints.push({ t, Q, mw: m_water });
     }
   }
@@ -793,11 +1038,37 @@ function calculate() {
   if (productMode === 'tank' && m_prod_recirc > m_prod_total * 10) warnings += 'Alerte: recirculation produit très élevée par rapport à la masse totale.\n';
   document.getElementById('warnings').innerHTML = warnings ? `<div class="warning">${warnings.replace(/\n/g,'<br>')}</div>` : '';
 
+  const tolerance = 0.2;
+  let decisionReached = false;
+  let decisionDetail = '';
+  if (productMode === 'tank') {
+    decisionReached = batchMinutes !== null && batchMinutes <= sim_minutes + tolerance;
+    decisionDetail = batchMinutes
+      ? `Temps estimé ${batchMinutes.toFixed(1)} min pour atteindre ${tout_target.toFixed(1)} °C, horizon affiché ${sim_minutes.toFixed(0)} min.`
+      : 'La cible capacité n\'est pas atteignable avec le point de fonctionnement actuel.';
+  } else if (mode === 'product_setpoint') {
+    decisionReached = Math.abs(Tout_prod - t_setpoint) <= tolerance || Tout_prod <= t_setpoint + tolerance;
+    decisionDetail = `Sortie produit ${Tout_prod.toFixed(1)} °C pour une consigne ${t_setpoint.toFixed(1)} °C.`;
+  } else {
+    decisionReached = Tout_prod <= tout_target + tolerance;
+    decisionDetail = `Sortie produit ${Tout_prod.toFixed(1)} °C pour une cible ${tout_target.toFixed(1)} °C.`;
+  }
+  if (Tout_water > Tin_prod || !LMTD_val) {
+    setDecisionBanner('not-reached', 'Objectif non garanti', 'Le point calculé présente une approche thermique incohérente ou trop serrée.');
+  } else {
+    setDecisionBanner(
+      decisionReached ? 'reached' : 'not-reached',
+      decisionReached ? 'Objectif atteint' : 'Objectif non atteint',
+      decisionDetail
+    );
+  }
+
   drawTrendChart(trendPoints);
 
   document.getElementById('regulation_result').innerHTML = `
     <div class="result-box">
-      <div class="result-row"><span class="result-label">Mode</span><span class="result-value">${regLabel}</span></div>
+      <div class="result-row"><span class="result-label">Mode opératoire produit</span><span class="result-value">${productMode === 'tank' ? 'Capacité / recirculation' : 'En ligne'}</span></div>
+      <div class="result-row"><span class="result-label">Objectif de contrôle</span><span class="result-value">${regLabel}</span></div>
       <div class="result-row"><span class="result-label">T° sortie produit échangeur</span><span class="result-value hot">${Tout_prod.toFixed(1)} °C</span></div>
       <div class="result-row"><span class="result-label">T° sortie eau</span><span class="result-value cold">${Tout_water.toFixed(1)} °C</span></div>
       <div class="result-row"><span class="result-label">ΔT eau</span><span class="result-value">${(Tout_water - Tin_water).toFixed(1)} °C</span></div>
