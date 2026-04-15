@@ -63,7 +63,7 @@
 
 <header>
   <h1>🌡️ Simulateur Échangeur Shell & Tube</h1>
-  <p>Refroidissement produit — avec cooling tower recirculation ou one-through</p>
+  <p>Refroidissement produit en ligne ou sur capacité, via échangeur shell & tube</p>
 </header>
 
 <div class="container">
@@ -73,9 +73,11 @@
 
   <div class="param-row">
     <div class="param">
-      <label>Débit massique</label>
-      <input type="number" id="m_prod" value="10000" step="100" min="0">
-      <span class="unit">kg/h</span>
+      <label>Mode produit</label>
+      <select id="product_mode">
+        <option value="inline">Produit en ligne (one-through)</option>
+        <option value="tank">Produit sur capacité / recirculation</option>
+      </select>
     </div>
     <div class="param">
       <label>Chaleur spécifique Cp</label>
@@ -83,14 +85,38 @@
       <span class="unit">kJ/(kg·K)</span>
     </div>
   </div>
-  <div class="param-row">
+  <div class="param-row" id="inline_prod_row">
+    <div class="param">
+      <label>Débit massique produit</label>
+      <input type="number" id="m_prod" value="10000" step="100" min="0">
+      <span class="unit">kg/h</span>
+    </div>
     <div class="param">
       <label>Température d'entrée produit</label>
       <input type="number" id="tin_prod" value="120" step="1">
       <span class="unit">°C</span>
     </div>
+  </div>
+  <div class="param-row" id="tank_prod_row" style="display:none;">
     <div class="param">
-      <label>Température de sortie souhaitée</label>
+      <label>Masse totale produit à refroidir</label>
+      <input type="number" id="m_prod_total" value="15000" step="100" min="1">
+      <span class="unit">kg</span>
+    </div>
+    <div class="param">
+      <label>Débit de recirculation produit</label>
+      <input type="number" id="m_prod_recirc" value="12000" step="100" min="1">
+      <span class="unit">kg/h</span>
+    </div>
+  </div>
+  <div class="param-row">
+    <div class="param">
+      <label>Température initiale produit</label>
+      <input type="number" id="tin_prod" value="120" step="1">
+      <span class="unit">°C</span>
+    </div>
+    <div class="param">
+      <label>Température cible produit</label>
       <input type="number" id="tout_prod" value="55" step="1">
       <span class="unit">°C</span>
     </div>
@@ -112,24 +138,24 @@
   </div>
   <div class="param-row">
     <div class="param">
-      <label>Température d'entrée eau (T_air + 5°C)</label>
+      <label>Température d'entrée eau</label>
       <input type="number" id="tin_water" value="30" step="1">
       <span class="unit">°C</span>
     </div>
     <div class="param">
-      <label>Volume du tank de recirculation</label>
-      <input type="number" id="tank_volume" value="5000" step="100" min="0">
-      <span class="unit">litres</span>
+      <label>Pas de simulation batch</label>
+      <input type="number" id="sim_minutes" value="10" step="1" min="1">
+      <span class="unit">minutes</span>
     </div>
   </div>
 
   <div class="card-title" style="margin-top:20px;">🎛️ Mode de régulation</div>
   <div class="regulation-mode">
     <select id="reg_mode">
-      <option value="fixed">⚡ Pas de régulation —_FIXE</option>
-      <option value="product_setpoint">🎯 Regulation: T_sortie_produit = consigne via débit eau</option>
-      <option value="tower_deltaT">🌡️ Regulation: ΔT_tower via débit produit</option>
-      <option value="one_through">↗️ ONE-THROUGH — pas de tank, eau en ligne</option>
+      <option value="fixed">⚡ Pas de régulation</option>
+      <option value="product_setpoint">🎯 Régulation T produit via débit eau</option>
+      <option value="tower_deltaT">🌡️ Régulation ΔT eau via débit produit</option>
+      <option value="one_through">↗️ Refroidissement produit en ligne</option>
     </select>
     <div class="mode-desc" id="mode_desc">Débits fixes. Le simulateur calcule les températures de sortie réelles et la puissance échangée.</div>
   </div>
@@ -185,6 +211,10 @@
       <div class="val" id="r_lmtd">—</div>
       <div class="lbl">LMTD (°C)</div>
     </div>
+    <div class="summary-item">
+      <div class="val" id="r_batch_time">—</div>
+      <div class="lbl">Temps vers cible (min)</div>
+    </div>
   </div>
 
   <div id="regulation_result" style="margin-top:16px;"></div>
@@ -226,15 +256,15 @@
       <line x1="340" y1="180" x2="340" y2="225" stroke="#3b82f6" stroke-width="3" marker-end="url(#ab)"/>
       <text x="200" y="240" fill="#3b82f6" font-size="10">Tout=<tspan id="d_tout_water">?</tspan>°C</text>
       <text x="280" y="240" fill="#3b82f6" font-size="10">m=<tspan id="d_m_water">20000</tspan> kg/h</text>
-      <!-- Tank -->
+      <!-- Product tank -->
       <g id="tank_group">
-        <rect x="420" y="75" width="65" height="100" rx="6" fill="rgba(59,130,246,0.2)" stroke="#3b82f6" stroke-width="2"/>
-        <text x="425" y="68" fill="#60a5fa" font-size="8">COOLING</text>
-        <text x="425" y="78" fill="#60a5fa" font-size="8">TOWER</text>
-        <text x="425" y="178" fill="#60a5fa" font-size="8">T_tank=</text>
-        <text x="425" y="190" fill="#60a5fa" font-size="10" font-weight="bold" id="d_t_tank">30°C</text>
-        <line x1="420" y1="110" x2="405" y2="110" stroke="#3b82f6" stroke-width="2"/>
-        <line x1="420" y1="140" x2="405" y2="140" stroke="#3b82f6" stroke-width="2"/>
+        <rect x="420" y="75" width="65" height="100" rx="6" fill="rgba(239,68,68,0.15)" stroke="#ef4444" stroke-width="2"/>
+        <text x="425" y="68" fill="#f87171" font-size="8">PRODUCT</text>
+        <text x="425" y="78" fill="#f87171" font-size="8">TANK</text>
+        <text x="425" y="178" fill="#f87171" font-size="8">T_tank=</text>
+        <text x="425" y="190" fill="#f87171" font-size="10" font-weight="bold" id="d_t_tank">120°C</text>
+        <line x1="420" y1="110" x2="405" y2="110" stroke="#ef4444" stroke-width="2"/>
+        <line x1="420" y1="140" x2="405" y2="140" stroke="#ef4444" stroke-width="2"/>
       </g>
       <!-- Label -->
       <text x="250" y="62" fill="#8892a4" font-size="11" text-anchor="middle">SHELL & TUBE HEAT EXCHANGER</text>
@@ -254,15 +284,22 @@
 <script>
 const regModeDesc = {
   'fixed': 'Débits fixes. Le simulateur calcule les températures de sortie réelles et la puissance échangée.',
-  'product_setpoint': 'Le débit d\'eau de cooling tower est ajusté pour maintenir T_sortie_produit = consigne. Le débit produit est fixe.',
-  'tower_deltaT': 'Le débit produit est ajusté pour maintenir ΔT de la cooling tower (T_eau_sortie - T_eau_entrée). Le débit eau est fixe.',
-  'one_through': 'Mode one-through: l\'eau de refroidissement ne recircule pas. Elle passe une seule fois dans l\'échangeur et repart.'
+  'product_setpoint': 'Le débit d\'eau est ajusté pour tenir une température produit cible.',
+  'tower_deltaT': 'Le débit produit est ajusté pour tenir un ΔT eau donné.',
+  'one_through': 'Refroidissement en ligne du produit, sans capacité produit.'
 };
 
-document.getElementById('reg_mode').addEventListener('change', function() {
-  document.getElementById('mode_desc').textContent = regModeDesc[this.value];
-  document.getElementById('tank_group').style.display = (this.value === 'one_through') ? 'none' : 'block';
-});
+function refreshUiState() {
+  const regMode = document.getElementById('reg_mode').value;
+  const productMode = document.getElementById('product_mode').value;
+  document.getElementById('mode_desc').textContent = regModeDesc[regMode];
+  document.getElementById('tank_group').style.display = (productMode === 'tank') ? 'block' : 'none';
+  document.getElementById('tank_prod_row').style.display = (productMode === 'tank') ? 'grid' : 'none';
+  document.getElementById('inline_prod_row').style.display = (productMode === 'tank') ? 'none' : 'grid';
+}
+
+document.getElementById('reg_mode').addEventListener('change', refreshUiState);
+document.getElementById('product_mode').addEventListener('change', refreshUiState);
 
 function LMTD(T1in, T1out, T2in, T2out) {
   const dT1 = T1in - T2out;
@@ -291,29 +328,34 @@ function effectivenessCalc(Tin_h, Tin_c, m_c, cp_c, m_h, cp_h, U, A) {
 }
 
 function calculate() {
-  const m_prod = parseFloat(document.getElementById('m_prod').value);
+  let m_prod = parseFloat(document.getElementById('m_prod').value);
+  const m_prod_total = parseFloat(document.getElementById('m_prod_total').value);
+  const m_prod_recirc = parseFloat(document.getElementById('m_prod_recirc').value);
   const cp_prod = parseFloat(document.getElementById('cp_prod').value);
   const Tin_prod = parseFloat(document.getElementById('tin_prod').value);
   const tout_target = parseFloat(document.getElementById('tout_prod').value);
   let m_water = parseFloat(document.getElementById('m_water').value);
   const cp_water = parseFloat(document.getElementById('cp_water').value);
   const Tin_water = parseFloat(document.getElementById('tin_water').value);
+  const sim_minutes = parseFloat(document.getElementById('sim_minutes').value);
   const A = parseFloat(document.getElementById('A_exch').value);
   const U = parseFloat(document.getElementById('U_val').value);
   const mode = document.getElementById('reg_mode').value;
+  const productMode = document.getElementById('product_mode').value;
   const t_setpoint = parseFloat(document.getElementById('t_setpoint').value);
 
   let Q, Tout_prod, Tout_water, epsilon, LMTD_val, regLabel = '';
+  let batchMinutes = null;
 
   const CpP = cp_prod, CpW = cp_water;
+  if (productMode === 'tank') m_prod = m_prod_recirc;
 
   if (mode === 'fixed' || mode === 'one_through') {
     const r = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r.Q; Tout_prod = r.Tout_h; Tout_water = r.Tout_c; epsilon = r.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = mode === 'one_through' ? 'ONE-THROUGH' : 'FIXED FLOW';
+    regLabel = (productMode === 'tank') ? 'BATCH sur capacité produit' : (mode === 'one_through' ? 'ONE-THROUGH' : 'FIXED FLOW');
   } else if (mode === 'product_setpoint') {
-    // Binary search on m_water to hit t_setpoint
     let lo = 100, hi = 200000;
     for (let i = 0; i < 50; i++) {
       const mid = (lo + hi) / 2;
@@ -326,7 +368,6 @@ function calculate() {
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
     regLabel = `🌊 Eau ajustée: ${m_water.toFixed(0)} kg/h`;
   } else if (mode === 'tower_deltaT') {
-    // Binary search on m_prod to hit deltaT
     const r0 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     const targetDT = (r0.Tout_c - Tin_water);
     let lo = 100, hi = 200000;
@@ -343,11 +384,20 @@ function calculate() {
     regLabel = `⚙️ Produit ajusté: ${m_prod.toFixed(0)} kg/h`;
   }
 
+  if (productMode === 'tank') {
+    const dT_per_pass = Math.max(0, Tin_prod - Tout_prod);
+    const coolingRateKperMin = (m_prod_recirc / Math.max(m_prod_total, 1)) * dT_per_pass / 60;
+    batchMinutes = coolingRateKperMin > 0 ? Math.max(0, (Tin_prod - tout_target) / coolingRateKperMin) : null;
+    document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
+  } else {
+    document.getElementById('d_t_tank').textContent = Tin_prod.toFixed(1) + '°C';
+  }
+
   document.getElementById('r_Q').textContent = (Q / 1000).toFixed(0);
   document.getElementById('r_water_out').textContent = Tout_water.toFixed(1);
   document.getElementById('r_effectiveness').textContent = (epsilon * 100).toFixed(1);
   document.getElementById('r_lmtd').textContent = LMTD_val ? LMTD_val.toFixed(1) : 'N/A';
-  document.getElementById('d_t_tank').textContent = Tin_water.toFixed(1) + '°C';
+  document.getElementById('r_batch_time').textContent = batchMinutes ? batchMinutes.toFixed(1) : '—';
 
   document.getElementById('d_tin_prod').textContent = Tin_prod.toFixed(0);
   document.getElementById('d_tout_prod').textContent = Tout_prod.toFixed(1);
@@ -360,30 +410,35 @@ function calculate() {
 
   const Qc1 = m_prod * cp_prod * (Tin_prod - Tout_prod) / 3600;
   const Qc2 = m_water * cp_water * (Tout_water - Tin_water) / 3600;
-  const imbalance = Math.abs(Qc1 - Qc2) / Math.abs(Qc1) * 100;
+  const imbalance = Math.abs(Qc1 - Qc2) / Math.max(Math.abs(Qc1), 1) * 100;
   document.getElementById('water_balance').innerHTML = `
     <div class="result-row"><span class="result-label">Bilan thermique produit</span><span class="result-value">${(Qc1/1000).toFixed(1)} kW</span></div>
     <div class="result-row"><span class="result-label">Bilan thermique eau</span><span class="result-value">${(Qc2/1000).toFixed(1)} kW</span></div>
     <div class="result-row"><span class="result-label">Écart</span><span class="result-value ${imbalance<2?'ok':'hot'}">${imbalance.toFixed(3)}%</span></div>
+    ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Masse totale à refroidir</span><span class="result-value">${m_prod_total.toFixed(0)} kg</span></div>` : ''}
+    ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Recirculation produit</span><span class="result-value">${m_prod_recirc.toFixed(0)} kg/h</span></div>` : ''}
+    ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Pas batch affiché</span><span class="result-value">${sim_minutes.toFixed(0)} min</span></div>` : ''}
   `;
 
   let warnings = '';
   if (Tout_water > Tin_prod) warnings += '⚠️ T° eau sortie > T° produit entrée: impossible.\n';
   if (epsilon > 0.95) warnings += '⚠️ Efficacité > 95%: échangeur sous-dimensionné.\n';
-  if (LMTD_val && LMTD_val < 2) warnings += '⚠️ LMTD < 2°C — surdimensionnez.\n';
+  if (LMTD_val && LMTD_val < 2) warnings += '⚠️ LMTD < 2°C, approche thermique serrée.\n';
+  if (productMode === 'tank' && m_prod_recirc > m_prod_total * 10) warnings += '⚠️ Recirculation produit très élevée vs masse totale.\n';
   document.getElementById('warnings').innerHTML = warnings ? `<div class="warning">${warnings.replace(/\n/g,'<br>')}</div>` : '';
 
   document.getElementById('regulation_result').innerHTML = `
     <div class="result-box">
       <div class="result-row"><span class="result-label">Mode</span><span class="result-value">${regLabel}</span></div>
-      <div class="result-row"><span class="result-label">T° sortie produit</span><span class="result-value hot">${Tout_prod.toFixed(1)} °C</span></div>
+      <div class="result-row"><span class="result-label">T° sortie produit échangeur</span><span class="result-value hot">${Tout_prod.toFixed(1)} °C</span></div>
       <div class="result-row"><span class="result-label">T° sortie eau</span><span class="result-value cold">${Tout_water.toFixed(1)} °C</span></div>
-      <div class="result-row"><span class="result-label">ΔT cooling tower</span><span class="result-value">${(Tout_water - Tin_water).toFixed(1)} °C</span></div>
+      <div class="result-row"><span class="result-label">ΔT eau</span><span class="result-value">${(Tout_water - Tin_water).toFixed(1)} °C</span></div>
+      ${productMode === 'tank' ? `<div class="result-row"><span class="result-label">Temps estimé jusqu'à ${tout_target.toFixed(0)}°C</span><span class="result-value">${batchMinutes ? batchMinutes.toFixed(1)+' min' : '—'}</span></div>` : ''}
     </div>
   `;
 }
 
-document.getElementById('reg_mode').dispatchEvent(new Event('change'));
+refreshUiState();
 calculate();
 </script>
 </body>
