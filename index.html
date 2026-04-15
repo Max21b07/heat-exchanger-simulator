@@ -6,78 +6,356 @@
 <title>Simulateur Échangeur Shell & Tube</title>
 <style>
   :root {
-    --bg: #0f1117;
-    --card: #1a1d27;
-    --border: #2a2d3a;
-    --text: #e0e3eb;
-    --muted: #8892a4;
-    --accent: #3b82f6;
-    --hot: #ef4444;
-    --cold: #3b82f6;
-    --ok: #22c55e;
+    --bg: #0b1116;
+    --panel: #111a22;
+    --panel-2: #15212b;
+    --field: #0d151c;
+    --border: #273642;
+    --border-strong: #395062;
+    --text: #e8edf2;
+    --muted: #94a3b3;
+    --muted-2: #687888;
+    --accent: #2f8fcb;
+    --accent-strong: #50b4ea;
+    --hot: #d65a4a;
+    --cold: #2f8fcb;
+    --ok: #35b67b;
+    --warning: #d79a2b;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    --radius: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 24px; }
-  header h1 { font-size: 1.2rem; font-weight: 600; color: var(--accent); }
-  header p { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-  .card-title { font-size: 0.9rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-  .param-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .param-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .param { display: flex; flex-direction: column; gap: 4px; }
-  label { font-size: 0.8rem; color: var(--muted); }
-  input, select { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 0.9rem; width: 100%; outline: none; }
-  input:focus, select:focus { border-color: var(--accent); }
-  .unit { font-size: 0.75rem; color: var(--muted); }
-  .result-box { background: var(--bg); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
-  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  body {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 20% -10%, rgba(47, 143, 203, 0.13), transparent 28rem),
+      linear-gradient(180deg, #0d151c 0%, var(--bg) 42%);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.45;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent 58%);
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(13, 21, 28, 0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+  }
+  .header-inner {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+  }
+  .eyebrow {
+    color: var(--accent-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  header h1 {
+    margin-top: 2px;
+    font-size: clamp(1.15rem, 2.2vw, 1.7rem);
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+  header p { font-size: 0.88rem; color: var(--muted); margin-top: 4px; max-width: 680px; }
+  .status-pill {
+    flex: 0 0 auto;
+    border: 1px solid rgba(53, 182, 123, 0.42);
+    color: #9ee2c2;
+    background: rgba(53, 182, 123, 0.09);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .container {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 28px 24px 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 0.96fr) minmax(360px, 1.04fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(21, 33, 43, 0.98), rgba(17, 26, 34, 0.98));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    animation: riseIn 420ms ease both;
+  }
+  .card:nth-child(2) { animation-delay: 80ms; }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 22px 0 14px;
+  }
+  .card-title:first-child { margin-top: 0; }
+  .card-title::before {
+    content: "";
+    width: 3px;
+    height: 16px;
+    border-radius: 99px;
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(47, 143, 203, 0.55);
+  }
+  .section-note { color: var(--muted); font-size: 0.79rem; margin: -6px 0 14px; }
+  .param-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .param-row.single { grid-template-columns: 1fr; }
+  .param-row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .param {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  label {
+    min-height: 2.05em;
+    display: flex;
+    align-items: flex-end;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  input, select {
+    appearance: none;
+    background: linear-gradient(180deg, #0f1921, var(--field));
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 11px;
+    color: var(--text);
+    font-size: 0.94rem;
+    width: 100%;
+    min-height: 42px;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+  }
+  select {
+    padding-right: 34px;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+      linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+      linear-gradient(180deg, #0f1921, var(--field));
+    background-position:
+      calc(100% - 18px) 18px,
+      calc(100% - 13px) 18px,
+      0 0;
+    background-size: 5px 5px, 5px 5px, 100% 100%;
+    background-repeat: no-repeat;
+  }
+  input:hover, select:hover { border-color: var(--border-strong); }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 143, 203, 0.16);
+  }
+  .unit { font-size: 0.73rem; color: var(--muted-2); }
+  .result-box {
+    background: rgba(13, 21, 28, 0.72);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    margin-bottom: 10px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(39, 54, 66, 0.72);
+  }
   .result-row:last-child { border-bottom: none; }
-  .result-label { color: var(--muted); font-size: 0.85rem; }
-  .result-value { font-weight: 600; font-size: 0.95rem; }
+  .result-label { color: var(--muted); font-size: 0.84rem; }
+  .result-value { font-weight: 750; font-size: 0.96rem; text-align: right; }
   .hot { color: var(--hot); }
   .cold { color: var(--cold); }
   .ok { color: var(--ok); }
   .regulation-mode { margin-bottom: 16px; }
-  .regulation-mode select { color: var(--accent); font-weight: 600; }
-  .mode-desc { font-size: 0.78rem; color: var(--muted); margin-top: 6px; padding: 8px; background: var(--bg); border-radius: 6px; }
-  .warning { color: #f59e0b; font-size: 0.8rem; margin-top: 4px; }
-  .info { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
-  .calc-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 8px; padding: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 16px; }
-  .calc-btn:hover { opacity: 0.9; }
-  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-  .summary-item { background: var(--bg); border-radius: 8px; padding: 12px; text-align: center; }
-  .summary-item .val { font-size: 1.3rem; font-weight: 700; }
-  .summary-item .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
-  .temp-bar { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; }
-  .temp-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
-  .bar-bg { background: var(--border); border-radius: 4px; height: 8px; position: relative; overflow: hidden; }
-  .bar-fill { border-radius: 4px; height: 100%; }
-  .bar-fill.hot { background: linear-gradient(90deg, var(--hot), #f87171); }
-  .bar-fill.cold { background: linear-gradient(90deg, var(--cold), #60a5fa); }
-  .chart-wrap { background: var(--bg); border-radius: 8px; padding: 12px; margin-top: 12px; }
-  canvas { width: 100%; height: 220px; display: block; }
+  .regulation-mode select { color: var(--accent-strong); font-weight: 750; }
+  .mode-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: rgba(13, 21, 28, 0.76);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .warning {
+    color: #f2bf63;
+    font-size: 0.83rem;
+    line-height: 1.55;
+    margin-top: 4px;
+    background: rgba(215, 154, 43, 0.11);
+    border: 1px solid rgba(215, 154, 43, 0.32);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .info { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+  .calc-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #227aaa, var(--accent));
+    color: white;
+    border: 1px solid rgba(126, 199, 238, 0.36);
+    border-radius: 6px;
+    padding: 13px 14px;
+    font-size: 0.98rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    margin-top: 18px;
+    box-shadow: 0 12px 30px rgba(47, 143, 203, 0.18);
+    transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  }
+  .calc-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 38px rgba(47, 143, 203, 0.24); filter: brightness(1.04); }
+  .calc-btn:active { transform: translateY(0); }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .summary-item {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(13, 21, 28, 0.92), rgba(15, 25, 33, 0.86));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .summary-item::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0.8;
+  }
+  .summary-item .val { font-size: clamp(1.28rem, 3vw, 1.75rem); font-weight: 800; letter-spacing: 0; }
+  .summary-item .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .temp-bar { display: flex; flex-direction: column; gap: 7px; margin: 12px 0 14px; }
+  .temp-bar-label { display: flex; justify-content: space-between; gap: 12px; font-size: 0.78rem; color: var(--muted); }
+  .bar-bg { background: #1b2a34; border: 1px solid rgba(57, 80, 98, 0.48); border-radius: 999px; height: 10px; position: relative; overflow: hidden; }
+  .bar-fill { border-radius: 999px; height: 100%; width: 0; transition: width 380ms ease; }
+  .bar-fill.hot { background: linear-gradient(90deg, #9d392f, var(--hot), #e38b7e); }
+  .bar-fill.cold { background: linear-gradient(90deg, #236f9c, var(--cold), #71c1ea); }
+  .diagram-wrap {
+    text-align: center;
+    padding: 14px;
+    background: rgba(13, 21, 28, 0.72);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .diagram-wrap svg { max-width: 100%; height: auto; }
+  .chart-wrap {
+    background: rgba(13, 21, 28, 0.72);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .chart-head .card-title { margin: 0; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 0.75rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 18px; height: 3px; border-radius: 99px; display: inline-block; }
+  .legend .q i { background: var(--hot); }
+  .legend .w i { background: var(--cold); }
+  canvas {
+    width: 100%;
+    height: 240px;
+    display: block;
+    border-radius: 6px;
+    background: #0b1116;
+  }
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 980px) {
+    .container { grid-template-columns: 1fr; }
+    header { position: static; }
+  }
+  @media (max-width: 680px) {
+    .header-inner { align-items: flex-start; flex-direction: column; padding: 16px; }
+    .status-pill { align-self: flex-start; }
+    .container { padding: 16px; gap: 16px; }
+    .card { padding: 16px; }
+    .param-row, .param-row-3, .summary-grid { grid-template-columns: 1fr; }
+    label { min-height: auto; }
+    .result-row { align-items: flex-start; flex-direction: column; gap: 3px; }
+    .result-value { text-align: left; }
+    .temp-bar-label { flex-direction: column; gap: 2px; }
+    .chart-head { align-items: flex-start; flex-direction: column; }
+    canvas { height: 210px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌡️ Simulateur Échangeur Shell & Tube</h1>
-  <p>Refroidissement produit en ligne ou sur capacité, via échangeur shell & tube</p>
+  <div class="header-inner">
+    <div>
+      <div class="eyebrow">Simulation thermique industrielle</div>
+      <h1>Échangeur shell & tube</h1>
+      <p>Refroidissement produit en ligne ou sur capacité avec bilan thermique, régulation et courbes temporelles.</p>
+    </div>
+    <div class="status-pill">Calcul local</div>
+  </div>
 </header>
 
 <div class="container">
 
 <div class="card">
-  <div class="card-title">⚙️ Paramètres du produit (côté tube)</div>
+  <div class="card-title">Produit côté tubes</div>
 
   <div class="param-row">
     <div class="param">
       <label>Mode produit</label>
       <select id="product_mode">
-        <option value="inline">Produit en ligne (one-through)</option>
+        <option value="inline">Produit en ligne</option>
         <option value="tank">Produit sur capacité / recirculation</option>
       </select>
     </div>
@@ -87,16 +365,11 @@
       <span class="unit">kJ/(kg·K)</span>
     </div>
   </div>
-  <div class="param-row" id="inline_prod_row">
+  <div class="param-row single" id="inline_prod_row">
     <div class="param">
       <label>Débit massique produit</label>
       <input type="number" id="m_prod" value="10000" step="100" min="0">
       <span class="unit">kg/h</span>
-    </div>
-    <div class="param">
-      <label>Température d'entrée produit</label>
-      <input type="number" id="tin_prod" value="120" step="1">
-      <span class="unit">°C</span>
     </div>
   </div>
   <div class="param-row" id="tank_prod_row" style="display:none;">
@@ -113,7 +386,7 @@
   </div>
   <div class="param-row">
     <div class="param">
-      <label>Température initiale produit</label>
+      <label>Température entrée / initiale produit</label>
       <input type="number" id="tin_prod" value="120" step="1">
       <span class="unit">°C</span>
     </div>
@@ -124,7 +397,7 @@
     </div>
   </div>
 
-  <div class="card-title" style="margin-top:20px;">💧 Eau de réfrigération (côté calandre)</div>
+  <div class="card-title">Eau de réfrigération côté calandre</div>
 
   <div class="param-row">
     <div class="param">
@@ -151,13 +424,13 @@
     </div>
   </div>
 
-  <div class="card-title" style="margin-top:20px;">🎛️ Mode de régulation</div>
+  <div class="card-title">Mode de régulation</div>
   <div class="regulation-mode">
     <select id="reg_mode">
-      <option value="fixed">⚡ Pas de régulation</option>
-      <option value="product_setpoint">🎯 Régulation T produit via débit eau</option>
-      <option value="tower_deltaT">🌡️ Régulation ΔT eau via débit produit</option>
-      <option value="one_through">↗️ Refroidissement produit en ligne</option>
+      <option value="fixed">Pas de régulation</option>
+      <option value="product_setpoint">Régulation T produit via débit eau</option>
+      <option value="tower_deltaT">Régulation ΔT eau via débit produit</option>
+      <option value="one_through">Refroidissement produit en ligne</option>
     </select>
     <div class="mode-desc" id="mode_desc">Débits fixes. Le simulateur calcule les températures de sortie réelles et la puissance échangée.</div>
   </div>
@@ -170,7 +443,7 @@
     </div>
   </div>
 
-  <div class="card-title" style="margin-top:20px;">🔧 Caractéristiques échangeur</div>
+  <div class="card-title">Caractéristiques de l'échangeur</div>
   <div class="param-row-3">
     <div class="param">
       <label>Surface d'échange A</label>
@@ -188,13 +461,13 @@
       <span class="unit">%</span>
     </div>
   </div>
-  <p class="info">U typique: eau-eau ~800-1200 | huile-eau ~300-600 | gaz-eau ~50-100 W/(m²·K)</p>
+  <p class="info">Repères U: eau-eau 800-1200 | huile-eau 300-600 | gaz-eau 50-100 W/(m²·K)</p>
 
-  <button class="calc-btn" onclick="calculate()">🔥 Calculer</button>
+  <button class="calc-btn" onclick="calculate()">Calculer le point de fonctionnement</button>
 </div>
 
 <div class="card">
-  <div class="card-title">📊 Résultats</div>
+  <div class="card-title">Synthèse des résultats</div>
 
   <div class="summary-grid">
     <div class="summary-item">
@@ -221,19 +494,19 @@
 
   <div id="regulation_result" style="margin-top:16px;"></div>
 
-  <div class="card-title" style="margin-top:20px;">🌡️ Profile de température</div>
+  <div class="card-title">Profil de température</div>
   <div class="temp-bar">
-    <div class="temp-bar-label"><span>Produit HOT →</span><span id="prod_profile">120 → 55°C</span></div>
-    <div class="bar-bg"><div class="bar-fill hot" id="bar_prod" style="width:100%"></div></div>
+    <div class="temp-bar-label"><span>Produit chaud</span><span id="prod_profile">120 → 55°C</span></div>
+    <div class="bar-bg"><div class="bar-fill hot" id="bar_prod"></div></div>
   </div>
   <div class="temp-bar">
-    <div class="temp-bar-label"><span>Eau COLD →</span><span id="water_profile">30 → ?°C</span></div>
-    <div class="bar-bg"><div class="bar-fill cold" id="bar_water" style="width:60%"></div></div>
+    <div class="temp-bar-label"><span>Eau froide</span><span id="water_profile">30 → ?°C</span></div>
+    <div class="bar-bg"><div class="bar-fill cold" id="bar_water"></div></div>
   </div>
 
-  <div class="card-title" style="margin-top:20px;">📐 Schéma</div>
-  <div style="text-align:center; padding: 12px; background: var(--bg); border-radius:8px;">
-    <svg viewBox="0 0 500 240" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;">
+  <div class="card-title">Schéma de procédé</div>
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 500 240" xmlns="http://www.w3.org/2000/svg">
       <!-- Shell box -->
       <rect x="80" y="70" width="340" height="110" rx="8" fill="none" stroke="#3b82f6" stroke-width="3"/>
       <!-- Tube lines -->
@@ -242,17 +515,17 @@
       <line x1="95" y1="130" x2="405" y2="130" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4,2"/>
       <line x1="95" y1="150" x2="405" y2="150" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4,2"/>
       <line x1="95" y1="165" x2="405" y2="165" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4,2"/>
-      <!-- HOT product in -->
+      <!-- Product in -->
       <line x1="10" y1="100" x2="80" y2="100" stroke="#ef4444" stroke-width="3" marker-end="url(#ar)"/>
-      <text x="5" y="90" fill="#ef4444" font-size="11" font-weight="bold">HOT</text>
+      <text x="5" y="90" fill="#d65a4a" font-size="11" font-weight="bold">PRODUIT</text>
       <text x="10" y="115" fill="#ef4444" font-size="10">Tin=<tspan id="d_tin_prod">120</tspan>°C</text>
       <text x="10" y="128" fill="#ef4444" font-size="10">m=<tspan id="d_m_prod">10000</tspan> kg/h</text>
-      <!-- HOT product out -->
+      <!-- Product out -->
       <line x1="80" y1="150" x2="10" y2="150" stroke="#ef4444" stroke-width="3" marker-end="url(#ar)"/>
       <text x="10" y="162" fill="#ef4444" font-size="10">Tout=<tspan id="d_tout_prod">55</tspan>°C</text>
       <!-- Water in -->
       <line x1="250" y1="180" x2="250" y2="225" stroke="#3b82f6" stroke-width="3" marker-end="url(#ab)"/>
-      <text x="200" y="225" fill="#3b82f6" font-size="11" font-weight="bold">Eau FR</text>
+      <text x="200" y="225" fill="#2f8fcb" font-size="11" font-weight="bold">EAU FROIDE</text>
       <text x="255" y="225" fill="#3b82f6" font-size="10">Tin=<tspan id="d_tin_water">30</tspan>°C</text>
       <!-- Water out -->
       <line x1="340" y1="180" x2="340" y2="225" stroke="#3b82f6" stroke-width="3" marker-end="url(#ab)"/>
@@ -261,15 +534,15 @@
       <!-- Product tank -->
       <g id="tank_group">
         <rect x="420" y="75" width="65" height="100" rx="6" fill="rgba(239,68,68,0.15)" stroke="#ef4444" stroke-width="2"/>
-        <text x="425" y="68" fill="#f87171" font-size="8">PRODUCT</text>
-        <text x="425" y="78" fill="#f87171" font-size="8">TANK</text>
+        <text x="425" y="68" fill="#e38b7e" font-size="8">CAPACITÉ</text>
+        <text x="425" y="78" fill="#e38b7e" font-size="8">PRODUIT</text>
         <text x="425" y="178" fill="#f87171" font-size="8">T_tank=</text>
         <text x="425" y="190" fill="#f87171" font-size="10" font-weight="bold" id="d_t_tank">120°C</text>
         <line x1="420" y1="110" x2="405" y2="110" stroke="#ef4444" stroke-width="2"/>
         <line x1="420" y1="140" x2="405" y2="140" stroke="#ef4444" stroke-width="2"/>
       </g>
       <!-- Label -->
-      <text x="250" y="62" fill="#8892a4" font-size="11" text-anchor="middle">SHELL & TUBE HEAT EXCHANGER</text>
+      <text x="250" y="62" fill="#94a3b3" font-size="11" text-anchor="middle">ÉCHANGEUR SHELL & TUBE</text>
       <defs>
         <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/></marker>
         <marker id="ab" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/></marker>
@@ -279,8 +552,14 @@
 
   <div class="result-box" id="water_balance" style="margin-top:8px;"></div>
   <div class="chart-wrap">
-    <div class="card-title">📈 Courbes temporelles</div>
-    <canvas id="trendChart" width="800" height="220"></canvas>
+    <div class="chart-head">
+      <div class="card-title">Courbes temporelles</div>
+      <div class="legend">
+        <span class="q"><i></i>Puissance</span>
+        <span class="w"><i></i>Débit eau</span>
+      </div>
+    </div>
+    <canvas id="trendChart" width="800" height="240"></canvas>
   </div>
   <div id="warnings" style="margin-top:12px;"></div>
 </div>
@@ -343,11 +622,11 @@ function drawTrendChart(points) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0f1117';
+  ctx.fillStyle = '#0b1116';
   ctx.fillRect(0, 0, w, h);
   if (!points || points.length < 2) return;
 
-  const pad = 40;
+  const pad = 44;
   const times = points.map(p => p.t);
   const duties = points.map(p => p.Q);
   const waters = points.map(p => p.mw);
@@ -359,30 +638,35 @@ function drawTrendChart(points) {
   const yQ = q => h - pad - (q - qMin) / Math.max(qMax - qMin, 1e-9) * (h - 2 * pad);
   const yW = mw => h - pad - (mw - wMin) / Math.max(wMax - wMin, 1e-9) * (h - 2 * pad);
 
-  ctx.strokeStyle = '#2a2d3a';
+  ctx.strokeStyle = '#1d2b35';
   ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + (i / 4) * (h - 2 * pad);
+    ctx.beginPath();
+    ctx.moveTo(pad, y);
+    ctx.lineTo(w - pad, y);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#395062';
   ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h - pad); ctx.lineTo(w - pad, h - pad); ctx.stroke();
 
-  ctx.fillStyle = '#8892a4';
+  ctx.fillStyle = '#94a3b3';
   ctx.font = '12px sans-serif';
   ctx.fillText('Temps (min)', w / 2 - 30, h - 8);
-  ctx.save(); ctx.translate(14, h / 2 + 30); ctx.rotate(-Math.PI / 2); ctx.fillText('Duty (kW)', 0, 0); ctx.restore();
+  ctx.save(); ctx.translate(14, h / 2 + 36); ctx.rotate(-Math.PI / 2); ctx.fillText('Puissance (kW)', 0, 0); ctx.restore();
   ctx.save(); ctx.translate(w - 8, h / 2 + 40); ctx.rotate(-Math.PI / 2); ctx.fillText('Débit eau (kg/h)', 0, 0); ctx.restore();
 
-  ctx.strokeStyle = '#ef4444';
+  ctx.strokeStyle = '#d65a4a';
   ctx.lineWidth = 2;
   ctx.beginPath();
   points.forEach((p, i) => { const x = xOf(p.t), y = yQ(p.Q); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
   ctx.stroke();
 
-  ctx.strokeStyle = '#3b82f6';
+  ctx.strokeStyle = '#2f8fcb';
   ctx.lineWidth = 2;
   ctx.beginPath();
   points.forEach((p, i) => { const x = xOf(p.t), y = yW(p.mw); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
   ctx.stroke();
-
-  ctx.fillStyle = '#ef4444'; ctx.fillRect(pad + 10, 10, 12, 3); ctx.fillStyle = '#e0e3eb'; ctx.fillText('Duty', pad + 28, 15);
-  ctx.fillStyle = '#3b82f6'; ctx.fillRect(pad + 90, 10, 12, 3); ctx.fillStyle = '#e0e3eb'; ctx.fillText('Débit eau', pad + 108, 15);
 }
 
 function calculate() {
@@ -413,7 +697,7 @@ function calculate() {
     const r = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r.Q; Tout_prod = r.Tout_h; Tout_water = r.Tout_c; epsilon = r.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = (productMode === 'tank') ? 'BATCH sur capacité produit' : (mode === 'one_through' ? 'ONE-THROUGH' : 'FIXED FLOW');
+    regLabel = (productMode === 'tank') ? 'Batch sur capacité produit' : (mode === 'one_through' ? 'Produit en ligne' : 'Débits fixes');
   } else if (mode === 'product_setpoint') {
     let lo = 100, hi = 200000;
     for (let i = 0; i < 50; i++) {
@@ -425,7 +709,7 @@ function calculate() {
     const r2 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r2.Q; Tout_prod = r2.Tout_h; Tout_water = r2.Tout_c; epsilon = r2.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = `🌊 Eau ajustée: ${m_water.toFixed(0)} kg/h`;
+    regLabel = `Eau ajustée: ${m_water.toFixed(0)} kg/h`;
   } else if (mode === 'tower_deltaT') {
     const r0 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     const targetDT = (r0.Tout_c - Tin_water);
@@ -440,7 +724,7 @@ function calculate() {
     const r2 = effectivenessCalc(Tin_prod, Tin_water, m_water, CpW, m_prod, CpP, U, A);
     Q = r2.Q; Tout_prod = r2.Tout_h; Tout_water = r2.Tout_c; epsilon = r2.epsilon;
     LMTD_val = LMTD(Tin_prod, Tout_prod, Tin_water, Tout_water);
-    regLabel = `⚙️ Produit ajusté: ${m_prod.toFixed(0)} kg/h`;
+    regLabel = `Produit ajusté: ${m_prod.toFixed(0)} kg/h`;
   }
 
   if (productMode === 'tank') {
@@ -484,6 +768,11 @@ function calculate() {
   document.getElementById('d_m_water').textContent = m_water.toFixed(0);
   document.getElementById('prod_profile').textContent = `${Tin_prod.toFixed(0)} → ${Tout_prod.toFixed(1)}°C`;
   document.getElementById('water_profile').textContent = `${Tin_water.toFixed(0)} → ${Tout_water.toFixed(1)}°C`;
+  const productDelta = Math.abs(Tin_prod - Tout_prod);
+  const waterDelta = Math.abs(Tout_water - Tin_water);
+  const maxProfileDelta = Math.max(productDelta, waterDelta, 1);
+  document.getElementById('bar_prod').style.width = `${Math.max(8, (productDelta / maxProfileDelta) * 100).toFixed(1)}%`;
+  document.getElementById('bar_water').style.width = `${Math.max(8, (waterDelta / maxProfileDelta) * 100).toFixed(1)}%`;
 
   const Qc1 = m_prod * cp_prod * (Tin_prod - Tout_prod) / 3600;
   const Qc2 = m_water * cp_water * (Tout_water - Tin_water) / 3600;
@@ -498,10 +787,10 @@ function calculate() {
   `;
 
   let warnings = '';
-  if (Tout_water > Tin_prod) warnings += '⚠️ T° eau sortie > T° produit entrée: impossible.\n';
-  if (epsilon > 0.95) warnings += '⚠️ Efficacité > 95%: échangeur sous-dimensionné.\n';
-  if (LMTD_val && LMTD_val < 2) warnings += '⚠️ LMTD < 2°C, approche thermique serrée.\n';
-  if (productMode === 'tank' && m_prod_recirc > m_prod_total * 10) warnings += '⚠️ Recirculation produit très élevée vs masse totale.\n';
+  if (Tout_water > Tin_prod) warnings += 'Alerte: T sortie eau > T entrée produit. Point de fonctionnement impossible.\n';
+  if (epsilon > 0.95) warnings += 'Alerte: efficacité > 95 %. Échangeur probablement sous-dimensionné.\n';
+  if (LMTD_val && LMTD_val < 2) warnings += 'Alerte: LMTD < 2 °C. Approche thermique très serrée.\n';
+  if (productMode === 'tank' && m_prod_recirc > m_prod_total * 10) warnings += 'Alerte: recirculation produit très élevée par rapport à la masse totale.\n';
   document.getElementById('warnings').innerHTML = warnings ? `<div class="warning">${warnings.replace(/\n/g,'<br>')}</div>` : '';
 
   drawTrendChart(trendPoints);
